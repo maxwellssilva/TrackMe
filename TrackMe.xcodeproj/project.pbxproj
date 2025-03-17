@@ -14,7 +14,7 @@
 		824887452D886B1A0086D0AF /* Exceptions for "TrackMe" folder in "TrackMe" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				Resources/Info.plist,
+				Info.plist,
 			);
 			target = 824887322D886B190086D0AF /* TrackMe */;
 		};
