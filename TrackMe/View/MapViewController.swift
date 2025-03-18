@@ -12,6 +12,7 @@ import CoreLocation
 class MapViewController: UIViewController, LocationManagerDelegate {
     
     private let locationManager = LocationManager()
+    private let viewModel = MapViewModel()
     
     private let searchBar: UISearchBar = {
         let searchBar = UISearchBar()
@@ -46,13 +47,22 @@ class MapViewController: UIViewController, LocationManagerDelegate {
         navigationItem.largeTitleDisplayMode = .always
     }
     
+    private func setupBindings() {
+        viewModel.onLocationUpdate = { [weak self] coordinate in
+            DispatchQueue.main.async {
+                let region = MKCoordinateRegion(center: coordinate, latitudinalMeters: 1000, longitudinalMeters: 1000)
+                self?.mapView.getMapView().setRegion(region, animated: true)
+            }
+        }
+    }
+    
     private func setupLayout() {
         view.addSubview(searchBar)
         view.addSubview(mapView)
         NSLayoutConstraint.activate([
             searchBar.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-            searchBar.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 10),
-            searchBar.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -10),
+            searchBar.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 5),
+            searchBar.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -5),
             
             mapView.topAnchor.constraint(equalTo: searchBar.bottomAnchor, constant: 5),
             mapView.leadingAnchor.constraint(equalTo: view.leadingAnchor),

@@ -28,6 +28,10 @@ class LocationManager: NSObject, CLLocationManagerDelegate {
         locationManager.requestWhenInUseAuthorization()
     }
     
+    func requestLocation() {
+        locationManager.requestLocation()
+    }
+    
     func startUpdatingLocation() {
         locationManager.startUpdatingLocation()
     }
