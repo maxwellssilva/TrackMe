@@ -9,10 +9,12 @@ import UIKit
 import MapKit
 import CoreLocation
 
-class MapViewController: UIViewController, LocationManagerDelegate {
+class MapViewController: UIViewController, LocationManagerDelegate, UISearchBarDelegate {
     
     private let locationManager = LocationManager()
     private let viewModel = MapViewModel()
+    private var isUserInteractingWithMap = false
+    private let geocoder = CLGeocoder()
     
     private let searchBar: UISearchBar = {
         let searchBar = UISearchBar()
@@ -35,10 +37,13 @@ class MapViewController: UIViewController, LocationManagerDelegate {
         view.backgroundColor = .systemBackground
         setupNavigationBar()
         setupLayout()
+        setupBindings()
+        searchBar.delegate = self
         
         locationManager.delegate = self
-        locationManager.requestLocationPermission()
-        locationManager.startUpdatingLocation()
+        mapView.getMapView().delegate = self
+        locationManager.requestUserLocationPermission()
+        viewModel.startLocationUpdates()
     }
 
     private func setupNavigationBar() {
@@ -48,12 +53,54 @@ class MapViewController: UIViewController, LocationManagerDelegate {
     }
     
     private func setupBindings() {
-        viewModel.onLocationUpdate = { [weak self] coordinate in
+        // Recebe a atualização da localização no ViewModel e atualiza o mapa
+        viewModel.onLocationUpdated = { [weak self] coordinate in
             DispatchQueue.main.async {
-                let region = MKCoordinateRegion(center: coordinate, latitudinalMeters: 1000, longitudinalMeters: 1000)
-                self?.mapView.getMapView().setRegion(region, animated: true)
+                if !self!.isUserInteractingWithMap {
+                    let region = MKCoordinateRegion(center: coordinate, latitudinalMeters: 1000, longitudinalMeters: 1000)
+                    self?.mapView.getMapView().setRegion(region, animated: true)
+                }
             }
         }
+        
+        viewModel.onError = { [weak self] errorMessage in
+            DispatchQueue.main.async {
+                print("Erro: \(errorMessage)")
+            }
+        }
+    }
+    
+    func didUpdateLocation(_ location: CLLocation) {
+        if !isUserInteractingWithMap {
+            viewModel.fetchUserLocation() // Atualiza a localização no ViewModel
+        }
+    }
+    
+    func didFailWithError(_ error: Error) {
+        print("Erro ao obter localização: \(error.localizedDescription)")
+    }
+    
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        guard let searchText = searchBar.text, !searchText.isEmpty else { return }
+            
+        geocoder.geocodeAddressString(searchText) { [weak self] (placemarks, error) in
+            if let error = error {
+                print("Erro ao geocodificar: \(error.localizedDescription)")
+                return
+            }
+            
+            if let placemark = placemarks?.first, let location = placemark.location {
+                self?.centerMapOnLocation(location: location) // Centraliza o mapa após encontrar a localização
+                searchBar.resignFirstResponder() // Esconde o teclado
+            } else {
+                print("Local não encontrado.")
+            }
+        }
+    }
+    
+    func centerMapOnLocation(location: CLLocation) {
+        let region = MKCoordinateRegion(center: location.coordinate, latitudinalMeters: 1000, longitudinalMeters: 1000)
+        mapView.getMapView().setRegion(region, animated: true)
     }
     
     private func setupLayout() {
@@ -70,15 +117,16 @@ class MapViewController: UIViewController, LocationManagerDelegate {
             mapView.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -30)
         ])
     }
-    
-    func didUpdateLocation(_ location: CLLocation) {
-        let coordinate = location.coordinate
-        let region = MKCoordinateRegion(center: coordinate, latitudinalMeters: 1000, longitudinalMeters: 1000)
-        mapView.getMapView().setRegion(region, animated: true)
-    }
-    
-    func didFailWithError(_ error: any Error) {
-        print("Erro ao obter localização: \(error.localizedDescription)")
-    }
 }
 
+extension MapViewController: MKMapViewDelegate {
+    func mapView(_ mapView: MKMapView, regionWillChangeAnimated animated: Bool) {
+        isUserInteractingWithMap = true
+    }
+    
+    func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
+        if !isUserInteractingWithMap {
+            viewModel.fetchUserLocation()
+        }
+    }
+}

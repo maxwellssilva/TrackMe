@@ -12,21 +12,31 @@ class MapViewModel: NSObject {
 
     private let locationManager = LocationManager()
     
-    var onLocationUpdate: ((CLLocationCoordinate2D) -> Void)?
+    var onLocationUpdated: ((CLLocationCoordinate2D) -> Void)?
+    var onError: ((String) -> Void)?
     
     override init() {
         super.init()
         locationManager.delegate = self
     }
     
-    func requestLocation() {
-        locationManager.requestLocation()
+    func fetchUserLocation() {
+        locationManager.fetchUserLocation()
     }
+    
+    func startLocationUpdates() {
+        locationManager.startUpdatingLocation()
+    }
+
+    func stopLocationUpdates() {
+        locationManager.stopUpdatingLocation()
+    }
+
 }
 
 extension MapViewModel: LocationManagerDelegate {
     func didUpdateLocation(_ location: CLLocation) {
-        onLocationUpdate?(location.coordinate)
+        onLocationUpdated?(location.coordinate)
     }
     
     func didFailWithError(_ error: Error) {
