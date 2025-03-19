@@ -24,11 +24,11 @@ class LocationManager: NSObject, CLLocationManagerDelegate {
         locationManager.desiredAccuracy = kCLLocationAccuracyBest
     }
     
-    func requestLocationPermission() {
+    func requestUserLocationPermission() {
         locationManager.requestWhenInUseAuthorization()
     }
     
-    func requestLocation() {
+    func fetchUserLocation() {
         locationManager.requestLocation()
     }
     
